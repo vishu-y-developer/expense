@@ -10,7 +10,7 @@ import {
 } from '../types';
 import { todayISO, nowTime, currentMonthKey, monthKeyOfDate } from '../utils/date';
 import { formatCurrency } from '../utils/format';
-import { calculateRecoveryFromEarning, isValidAmount } from '../calc/engine';
+import { isValidAmount } from '../calc/engine';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { Icon, categoryIcon, paymentIcon } from '../components/Icon';
 
@@ -70,11 +70,6 @@ export function AddTransaction() {
 
   const numericAmount = parseFloat(amount);
   const validAmount = isValidAmount(numericAmount);
-
-  const earningPreview = useMemo(() => {
-    if (type !== 'earning' || !validAmount) return null;
-    return calculateRecoveryFromEarning(summary.recoveryRequired, numericAmount);
-  }, [type, validAmount, numericAmount, summary.recoveryRequired]);
 
   const expenseWarning = useMemo(() => {
     if (type !== 'expense' || !validAmount) return null;
@@ -170,7 +165,7 @@ export function AddTransaction() {
         />
       </div>
 
-      {type === 'earning' && earningPreview && (
+      {type === 'earning' && validAmount && (
         <div className="card stack" style={{ background: 'var(--positive-soft)', border: 'none' }}>
           <div className="row">
             <span className="hero-sub">Earning</span>
@@ -178,24 +173,16 @@ export function AddTransaction() {
               +{formatCurrency(numericAmount)}
             </span>
           </div>
-          {summary.recoveryRequired > 0 && (
-            <div className="row">
-              <span className="hero-sub">Recovery needed</span>
-              <span>{formatCurrency(summary.recoveryRequired)}</span>
-            </div>
-          )}
-          {earningPreview.recovered > 0 && (
-            <div className="row">
-              <span className="hero-sub">Recovered by this earning</span>
-              <span style={{ color: 'var(--positive)' }}>{formatCurrency(earningPreview.recovered)}</span>
-            </div>
-          )}
           <div className="row">
-            <span className="hero-sub">
-              {earningPreview.recovered > 0 ? 'Remaining earning after recovery' : 'Adds to safe-to-spend'}
-            </span>
-            <span style={{ fontWeight: 700 }}>{formatCurrency(earningPreview.remainder)}</span>
+            <span className="hero-sub">Adds to your earnings balance</span>
+            <span style={{ fontWeight: 700 }}>{formatCurrency(numericAmount)}</span>
           </div>
+          {summary.recoveryRequired > 0 && (
+            <span className="hero-sub" style={{ marginTop: -2 }}>
+              This won't touch your {formatCurrency(summary.recoveryRequired)} recovery debt — pay
+              that back yourself from Dashboard whenever you want.
+            </span>
+          )}
         </div>
       )}
 

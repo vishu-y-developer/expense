@@ -182,9 +182,9 @@ export function Analytics() {
         </div>
         <hr className="divider" />
         <span className="hero-sub">
-          Every rupee spent must be earned back before it counts as fully free again. Recovery
-          required is the portion of this month's spending your future earnings still need to
-          replenish.
+          Recovery required is spending that went beyond this month's budget. It never clears on
+          its own — pay it back manually from your earnings balance on the Dashboard whenever
+          you're ready.
         </span>
       </div>
     </div>

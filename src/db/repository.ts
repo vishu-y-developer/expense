@@ -1,5 +1,5 @@
 import { getDB, DEFAULT_SETTINGS } from './db';
-import type { AppSettings, MonthlyBudget, Transaction } from '../types';
+import type { AppSettings, MonthlyBudget, RecoveryPayment, Transaction } from '../types';
 import { generateId } from '../utils/id';
 import { isValidAmount } from '../calc/engine';
 
@@ -99,6 +99,45 @@ export async function getAllBudgets(): Promise<MonthlyBudget[]> {
   return db.getAll('budgets');
 }
 
+export interface NewRecoveryPaymentInput {
+  month: string;
+  amount: number;
+  date: string;
+  time: string;
+  note: string;
+}
+
+export async function getAllRecoveryPayments(): Promise<RecoveryPayment[]> {
+  const db = await getDB();
+  return db.getAll('recoveryPayments');
+}
+
+export async function getRecoveryPaymentsForMonth(monthKey: string): Promise<RecoveryPayment[]> {
+  const db = await getDB();
+  return db.getAllFromIndex('recoveryPayments', 'by-month', monthKey);
+}
+
+export async function addRecoveryPayment(input: NewRecoveryPaymentInput): Promise<RecoveryPayment> {
+  if (!isValidAmount(input.amount)) throw new Error('Enter a valid amount greater than 0.');
+  const payment: RecoveryPayment = {
+    id: generateId(),
+    month: input.month,
+    amount: Math.round(input.amount * 100) / 100,
+    date: input.date,
+    time: input.time,
+    note: input.note,
+    createdAt: Date.now(),
+  };
+  const db = await getDB();
+  await db.put('recoveryPayments', payment);
+  return payment;
+}
+
+export async function deleteRecoveryPayment(id: string): Promise<void> {
+  const db = await getDB();
+  await db.delete('recoveryPayments', id);
+}
+
 export async function getSettings(): Promise<AppSettings> {
   const db = await getDB();
   const settings = await db.get('settings', 'settings');
@@ -123,35 +162,40 @@ async function updateRecents(
 
 export async function clearAllData(): Promise<void> {
   const db = await getDB();
-  const tx = db.transaction(['transactions', 'budgets', 'settings'], 'readwrite');
+  const tx = db.transaction(['transactions', 'budgets', 'settings', 'recoveryPayments'], 'readwrite');
   await Promise.all([
     tx.objectStore('transactions').clear(),
     tx.objectStore('budgets').clear(),
     tx.objectStore('settings').clear(),
+    tx.objectStore('recoveryPayments').clear(),
     tx.done,
   ]);
 }
 
 export interface BackupData {
-  version: 1;
+  version: 1 | 2;
   exportedAt: string;
   transactions: Transaction[];
   budgets: MonthlyBudget[];
   settings: AppSettings;
+  /** Absent in version-1 backups made before manual recovery payments existed. */
+  recoveryPayments?: RecoveryPayment[];
 }
 
 export async function exportBackup(): Promise<BackupData> {
-  const [transactions, budgets, settings] = await Promise.all([
+  const [transactions, budgets, settings, recoveryPayments] = await Promise.all([
     getAllTransactions(),
     getAllBudgets(),
     getSettings(),
+    getAllRecoveryPayments(),
   ]);
   return {
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
     transactions,
     budgets,
     settings,
+    recoveryPayments,
   };
 }
 
@@ -159,6 +203,7 @@ export function validateBackupData(data: unknown): data is BackupData {
   if (!data || typeof data !== 'object') return false;
   const d = data as Partial<BackupData>;
   if (!Array.isArray(d.transactions) || !Array.isArray(d.budgets)) return false;
+  if (d.recoveryPayments !== undefined && !Array.isArray(d.recoveryPayments)) return false;
   return d.transactions.every(
     (t) =>
       t &&
@@ -173,14 +218,18 @@ export function validateBackupData(data: unknown): data is BackupData {
 /** Replaces all existing data with the imported backup. Caller must confirm first. */
 export async function importBackupReplace(data: BackupData): Promise<void> {
   const db = await getDB();
-  const tx = db.transaction(['transactions', 'budgets', 'settings'], 'readwrite');
+  const tx = db.transaction(['transactions', 'budgets', 'settings', 'recoveryPayments'], 'readwrite');
   await tx.objectStore('transactions').clear();
   await tx.objectStore('budgets').clear();
+  await tx.objectStore('recoveryPayments').clear();
   for (const t of data.transactions) {
     await tx.objectStore('transactions').put(t);
   }
   for (const b of data.budgets) {
     await tx.objectStore('budgets').put(b);
+  }
+  for (const p of data.recoveryPayments ?? []) {
+    await tx.objectStore('recoveryPayments').put(p);
   }
   if (data.settings) {
     await tx.objectStore('settings').put(data.settings);
@@ -215,6 +264,18 @@ export async function importBackupMerge(
     if (!current) await budgetTx.store.put(b);
   }
   await budgetTx.done;
+
+  if (data.recoveryPayments?.length) {
+    const existingPayments = await db.getAll('recoveryPayments');
+    const existingPaymentIds = new Set(existingPayments.map((p) => p.id));
+    const paymentTx = db.transaction('recoveryPayments', 'readwrite');
+    for (const p of data.recoveryPayments) {
+      if (!existingPaymentIds.has(p.id)) {
+        await paymentTx.store.put(p);
+      }
+    }
+    await paymentTx.done;
+  }
 
   return { added, skipped };
 }

@@ -12,9 +12,15 @@ Tokens are plain CSS custom properties, declared in three layers:
 
 - `:root` — theme-independent tokens (radii, easing curves, durations, and the semantic
   positive/negative colors, which are intentionally constant across themes).
-- `:root, :root[data-theme='dark']` — dark theme values (the default/primary theme).
+- `:root, :root[data-theme='dark']` — dark theme values ("Forest Green", the default/primary theme).
+- `:root[data-theme='batman']` — a second dark theme ("Batman"): glossy black with a single vivid
+  yellow accent, backed by a synthetic "liquid chrome" swirl photo (`public/batman-bg.jpg`, same
+  `--bg-photo` mechanism as Forest Green — see the asset-management exception below), same glass
+  token structure as Forest Green so every component looks identical, just recolored.
 - `:root[data-theme='light']` — light theme overrides. Only variables that actually differ are
   redeclared here; anything not redeclared falls through to the dark/common block.
+
+Selectable in Settings → Appearance: Light, Forest Green (`dark`), Batman (`batman`), System.
 
 ```css
 /* src/index.css */
@@ -163,13 +169,14 @@ for consistency, but matching the CSS class names is what actually matters for v
 - **No image optimization pipeline** (no `vite-imagetools`, no `sharp`) since there are no photo
   assets in the app. If a Figma frame includes photography, it should be added deliberately with a
   README note, not silently pulled in.
-- **Exception — `public/forest-bg.jpg`:** a single ~88KB pre-blurred/pre-vignetted bokeh photo used
-  as the ambient backdrop for the dark ("Forest Green") theme, referenced by the `--bg-photo` token
-  (see §1/§6) and painted as a plain `background-image` layer on `<body>` — never as a separate
-  DOM element, and never with a CSS `filter: blur()` applied at runtime (the blur is baked into the
-  file itself), per the compositing pitfall noted in §6. The light theme has no photo
-  (`--bg-photo: none`) and keeps its original gradient-only look. Precached by the PWA service
-  worker like any other built asset — no changes needed there.
+- **Exception — `public/forest-bg.jpg` and `public/batman-bg.jpg`:** each a single small
+  pre-blurred/pre-vignetted photo (real-looking bokeh for Forest Green, a synthetic glossy "liquid
+  chrome" swirl for Batman) used as that theme's ambient backdrop, referenced by its `--bg-photo`
+  token (see §1/§6) and painted as a plain `background-image` layer on `<body>` — never as a
+  separate DOM element, and never with a CSS `filter: blur()` applied at runtime (the blur is baked
+  into the file itself), per the compositing pitfall noted in §6. The light theme has no photo
+  (`--bg-photo: none`) and keeps its original gradient-only look. Both are precached by the PWA
+  service worker like any other built asset — no changes needed there.
 
 ## 5. Icon System
 

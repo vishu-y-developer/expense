@@ -1,5 +1,5 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
-import type { AppSettings, MonthlyBudget, Transaction } from '../types';
+import type { AppSettings, MonthlyBudget, RecoveryPayment, Transaction } from '../types';
 
 interface MoneyDB extends DBSchema {
   transactions: {
@@ -15,10 +15,15 @@ interface MoneyDB extends DBSchema {
     key: string;
     value: AppSettings;
   };
+  recoveryPayments: {
+    key: string;
+    value: RecoveryPayment;
+    indexes: { 'by-month': string };
+  };
 }
 
 const DB_NAME = 'money-tracker-db';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 let dbPromise: Promise<IDBPDatabase<MoneyDB>> | null = null;
 
@@ -36,6 +41,10 @@ export function getDB(): Promise<IDBPDatabase<MoneyDB>> {
         }
         if (!db.objectStoreNames.contains('settings')) {
           db.createObjectStore('settings', { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains('recoveryPayments')) {
+          const store = db.createObjectStore('recoveryPayments', { keyPath: 'id' });
+          store.createIndex('by-month', 'month');
         }
       },
     });

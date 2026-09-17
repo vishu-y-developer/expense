@@ -55,21 +55,45 @@ export interface MonthlyBudget {
   amount: number;
 }
 
+/**
+ * A manual, user-initiated payment against outstanding recovery debt. Recovery is NEVER
+ * paid automatically from earnings — the user explicitly chooses to pay it down, like
+ * paying off a credit card from a separate bank balance. See engine.ts's header comment.
+ */
+export interface RecoveryPayment {
+  id: string;
+  /** The month whose recovery debt this payment reduces, e.g. "2026-09" */
+  month: string;
+  amount: number;
+  date: string;
+  time: string;
+  note: string;
+  createdAt: number;
+}
+
 export interface AppSettings {
   id: 'settings';
-  theme: 'light' | 'dark' | 'system';
+  theme: 'light' | 'dark' | 'batman' | 'system';
   recentCategory: Partial<Record<TransactionType, string>>;
   recentPaymentMethod: string;
   customExpenseCategories: string[];
   customEarningCategories: string[];
 }
 
+export type RecoveryStepKind = 'expense' | 'earning' | 'recovery-payment';
+
 export interface RecoveryStep {
-  transaction: Transaction;
+  kind: RecoveryStepKind;
+  /** Present for kind 'expense' | 'earning' */
+  transaction?: Transaction;
+  /** Present for kind 'recovery-payment' */
+  payment?: RecoveryPayment;
+  date: string;
+  time: string;
   recoveryRequiredBefore: number;
   recoveryRequiredAfter: number;
-  recoveredByThisTxn: number;
-  remainderAfterRecovery: number;
+  /** Positive = this step reduced recovery debt (a payment), negative = it created debt (an over-budget expense). */
+  recoveryChange: number;
   safeToSpendAfter: number;
 }
 
@@ -82,7 +106,9 @@ export interface MonthlySummary {
   budgetUsed: number;
   budgetRemaining: number;
   budgetUsedPercent: number;
+  /** How much of this month's over-budget spending is still unpaid. Never reduced by earnings automatically. */
   recoveryRequired: number;
+  /** How much of this month's over-budget spending has been manually paid back so far. */
   recoveryRecovered: number;
   safeToSpend: number;
   averageDailySpending: number;

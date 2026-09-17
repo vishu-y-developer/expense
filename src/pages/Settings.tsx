@@ -101,7 +101,8 @@ export function Settings() {
 
   const themeOptions: { value: AppSettings['theme']; label: string }[] = [
     { value: 'light', label: 'Light' },
-    { value: 'dark', label: 'Dark' },
+    { value: 'dark', label: 'Forest Green' },
+    { value: 'batman', label: 'Batman' },
     { value: 'system', label: 'System' },
   ];
 
@@ -146,7 +147,18 @@ export function Settings() {
               className={`chip ${settings.theme === opt.value ? 'active' : ''}`}
               onClick={() => updateTheme(opt.value)}
             >
-              <Icon name={opt.value === 'light' ? 'sun' : opt.value === 'dark' ? 'moon' : 'system'} size={14} />
+              <Icon
+                name={
+                  opt.value === 'light'
+                    ? 'sun'
+                    : opt.value === 'dark'
+                    ? 'moon'
+                    : opt.value === 'batman'
+                    ? 'shield'
+                    : 'system'
+                }
+                size={14}
+              />
               {opt.label}
             </button>
           ))}

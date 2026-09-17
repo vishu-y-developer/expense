@@ -7,18 +7,21 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import type { AppSettings, Transaction } from '../types';
+import type { AppSettings, RecoveryPayment, Transaction } from '../types';
 import { DEFAULT_SETTINGS } from '../db/db';
 import {
   addTransaction,
   deleteTransaction,
   getAllTransactions,
   getAllBudgets,
+  getAllRecoveryPayments,
+  addRecoveryPayment as dbAddRecoveryPayment,
   getSettings,
   saveSettings,
   setBudgetForMonth as dbSetBudgetForMonth,
   updateTransaction as dbUpdateTransaction,
   type NewTransactionInput,
+  type NewRecoveryPaymentInput,
 } from '../db/repository';
 import { currentMonthKey } from '../utils/date';
 
@@ -26,6 +29,7 @@ interface AppContextValue {
   loading: boolean;
   transactions: Transaction[];
   budgets: Record<string, number>;
+  recoveryPayments: RecoveryPayment[];
   settings: AppSettings;
   selectedMonth: string;
   setSelectedMonth: (month: string) => void;
@@ -34,6 +38,7 @@ interface AppContextValue {
   createTransaction: (input: NewTransactionInput) => Promise<Transaction>;
   editTransaction: (id: string, input: NewTransactionInput) => Promise<Transaction>;
   removeTransaction: (id: string) => Promise<void>;
+  recordRecoveryPayment: (input: NewRecoveryPaymentInput) => Promise<RecoveryPayment>;
   updateTheme: (theme: AppSettings['theme']) => Promise<void>;
   refreshAll: () => Promise<void>;
 }
@@ -44,19 +49,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [budgets, setBudgets] = useState<Record<string, number>>({});
+  const [recoveryPayments, setRecoveryPayments] = useState<RecoveryPayment[]>([]);
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [selectedMonth, setSelectedMonth] = useState<string>(currentMonthKey());
 
   const refreshAll = useCallback(async () => {
-    const [txns, budgetRecords, s] = await Promise.all([
+    const [txns, budgetRecords, payments, s] = await Promise.all([
       getAllTransactions(),
       getAllBudgets(),
+      getAllRecoveryPayments(),
       getSettings(),
     ]);
     setTransactions(txns);
     const budgetMap: Record<string, number> = {};
     for (const b of budgetRecords) budgetMap[b.month] = b.amount;
     setBudgets(budgetMap);
+    setRecoveryPayments(payments);
     setSettings(s);
   }, []);
 
@@ -107,6 +115,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await refreshAll();
   }, [refreshAll]);
 
+  const recordRecoveryPayment = useCallback(async (input: NewRecoveryPaymentInput) => {
+    const p = await dbAddRecoveryPayment(input);
+    await refreshAll();
+    return p;
+  }, [refreshAll]);
+
   const updateTheme = useCallback(async (theme: AppSettings['theme']) => {
     const next = { ...settings, theme };
     setSettings(next);
@@ -118,6 +132,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       loading,
       transactions,
       budgets,
+      recoveryPayments,
       settings,
       selectedMonth,
       setSelectedMonth,
@@ -126,6 +141,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       createTransaction,
       editTransaction,
       removeTransaction,
+      recordRecoveryPayment,
       updateTheme,
       refreshAll,
     }),
@@ -133,6 +149,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       loading,
       transactions,
       budgets,
+      recoveryPayments,
       settings,
       selectedMonth,
       getBudget,
@@ -140,6 +157,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       createTransaction,
       editTransaction,
       removeTransaction,
+      recordRecoveryPayment,
       updateTheme,
       refreshAll,
     ]

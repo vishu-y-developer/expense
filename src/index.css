@@ -77,6 +77,56 @@
 }
 
 /* ================================================================== */
+/* BATMAN — black & gunmetal, cold metallic glass                      */
+/* ================================================================== */
+
+:root[data-theme='batman'] {
+  color-scheme: dark;
+
+  --bg-0: #050506;
+  --bg-1: #14161a;
+
+  --text: #eef0f3;
+  --text-secondary: rgba(238, 240, 243, 0.6);
+  --text-tertiary: rgba(238, 240, 243, 0.36);
+
+  /* Vivid Bat-Signal yellow — the one saturated note against the glossy black */
+  --accent: #f5e14c;
+  --accent-2: #fff3a6;
+  --accent-ink: #1a1600;
+  --accent-soft: rgba(245, 225, 76, 0.16);
+  --accent-glow: rgba(245, 225, 76, 0.4);
+
+  /* Glossy black "liquid chrome" swirl backdrop — a single pre-blurred background-image
+     on <body>, same rule as the Forest Green photo (see §6/§8 in CLAUDE.md). */
+  --bg-photo: url('/batman-bg.jpg');
+
+  --glass-strong-bg: rgba(200, 210, 222, 0.09);
+  --glass-strong-border: rgba(210, 218, 228, 0.18);
+  --glass-strong-blur: 36px;
+  --glass-strong-sat: 130%;
+  --glass-strong-shadow: 0 30px 60px -24px rgba(0, 0, 0, 0.9), 0 4px 16px rgba(0, 0, 0, 0.55);
+  --glass-strong-inset: inset 0 1px 0 rgba(210, 218, 228, 0.16), inset 0 0 0 1px rgba(210, 218, 228, 0.04);
+
+  --glass-soft-bg: rgba(200, 210, 222, 0.06);
+  --glass-soft-border: rgba(210, 218, 228, 0.13);
+  --glass-soft-blur: 24px;
+  --glass-soft-sat: 120%;
+  --glass-soft-shadow: 0 20px 46px -26px rgba(0, 0, 0, 0.85);
+  --glass-soft-inset: inset 0 1px 0 rgba(210, 218, 228, 0.1);
+
+  --surface-tint: rgba(210, 218, 228, 0.07);
+  --track: rgba(210, 218, 228, 0.13);
+
+  --blob-1: rgba(110, 118, 132, 0.1);
+  --blob-2: rgba(3, 3, 4, 0.45);
+  --blob-3: rgba(80, 88, 100, 0.08);
+
+  --flow-net-bg: var(--accent-soft);
+  --flow-net-text: var(--accent);
+}
+
+/* ================================================================== */
 /* LIGHT — same language, warm frosted glass                           */
 /* ================================================================== */
 
@@ -397,7 +447,8 @@ a {
   padding-top: 18px;
   border-top: 1px solid var(--glass-soft-border);
   display: flex;
-  gap: 24px;
+  flex-wrap: wrap;
+  gap: 16px 22px;
 }
 
 .hero-footer-item {

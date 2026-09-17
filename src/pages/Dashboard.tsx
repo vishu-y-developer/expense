@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { useMonthData } from '../hooks/useMonthData';
@@ -7,12 +8,14 @@ import { TransactionRow } from '../components/TransactionRow';
 import { AnimatedNumber } from '../components/AnimatedNumber';
 import { GlassProgress } from '../components/Glass';
 import { Icon } from '../components/Icon';
+import { RecoverModal } from '../components/RecoverModal';
 
 export function Dashboard() {
   const navigate = useNavigate();
   const month = currentMonthKey();
-  const { summary, todaySummary, recentTransactions, budget } = useMonthData(month);
+  const { summary, todaySummary, recentTransactions, budget, earningsBalance } = useMonthData(month);
   const { transactions } = useApp();
+  const [showRecover, setShowRecover] = useState(false);
 
   const todayEarnings = todaySummary?.earnings ?? 0;
   const todayExpenses = todaySummary?.expenses ?? 0;
@@ -38,7 +41,7 @@ export function Dashboard() {
         <span className="hero-label">Safe to Spend</span>
         <AnimatedNumber value={summary.safeToSpend} className="hero-amount" />
         <span className="hero-sub">
-          Available according to your budget and recovery rules.
+          Your monthly budget minus what you've spent. Earnings never add to this automatically.
         </span>
         <div className="hero-footer">
           <div className="hero-footer-item">
@@ -49,6 +52,12 @@ export function Dashboard() {
             <span className="label">Recovery</span>
             <span className="hero-footer-value" style={{ color: summary.recoveryRequired > 0 ? 'var(--negative)' : 'var(--positive)' }}>
               {formatCurrency(summary.recoveryRequired)}
+            </span>
+          </div>
+          <div className="hero-footer-item">
+            <span className="label">Earnings balance</span>
+            <span className="hero-footer-value" style={{ color: 'var(--positive)' }}>
+              {formatCurrency(earningsBalance)}
             </span>
           </div>
         </div>
@@ -106,8 +115,8 @@ export function Dashboard() {
             </span>
             <span className="hero-sub" style={{ marginTop: 4 }}>
               {summary.recoveryRequired > 0
-                ? 'Your next earnings will cover this first.'
-                : 'No spending currently owes a future earning.'}
+                ? "Stays owed until you pay it back yourself — earnings won't touch it."
+                : 'No spending currently owes a payback.'}
             </span>
           </div>
           <GlassProgress
@@ -124,6 +133,21 @@ export function Dashboard() {
               {formatCurrency(summary.recoveryRecovered)} recovered of {formatCurrency(recoveryTotal)} total this month.
             </span>
           </div>
+        )}
+        {summary.recoveryRequired > 0 && (
+          <button
+            className="btn btn-secondary"
+            style={{ marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+            onClick={() => setShowRecover(true)}
+            disabled={earningsBalance <= 0}
+          >
+            <Icon name="refresh" size={15} /> Recover from earnings
+          </button>
+        )}
+        {summary.recoveryRequired > 0 && earningsBalance <= 0 && (
+          <span className="hero-sub" style={{ marginTop: 8, display: 'block' }}>
+            Your earnings balance is empty — log an earning first.
+          </span>
         )}
       </div>
       </div>
@@ -193,6 +217,15 @@ export function Dashboard() {
             .map((t) => <TransactionRow key={t.id} transaction={t} onClick={() => navigate(`/add?edit=${t.id}`)} />)
         )}
       </div>
+
+      {showRecover && (
+        <RecoverModal
+          month={month}
+          recoveryRequired={summary.recoveryRequired}
+          earningsBalance={earningsBalance}
+          onClose={() => setShowRecover(false)}
+        />
+      )}
     </div>
   );
 }
