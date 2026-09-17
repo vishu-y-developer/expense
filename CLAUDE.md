@@ -163,6 +163,13 @@ for consistency, but matching the CSS class names is what actually matters for v
 - **No image optimization pipeline** (no `vite-imagetools`, no `sharp`) since there are no photo
   assets in the app. If a Figma frame includes photography, it should be added deliberately with a
   README note, not silently pulled in.
+- **Exception — `public/forest-bg.jpg`:** a single ~88KB pre-blurred/pre-vignetted bokeh photo used
+  as the ambient backdrop for the dark ("Forest Green") theme, referenced by the `--bg-photo` token
+  (see §1/§6) and painted as a plain `background-image` layer on `<body>` — never as a separate
+  DOM element, and never with a CSS `filter: blur()` applied at runtime (the blur is baked into the
+  file itself), per the compositing pitfall noted in §6. The light theme has no photo
+  (`--bg-photo: none`) and keeps its original gradient-only look. Precached by the PWA service
+  worker like any other built asset — no changes needed there.
 
 ## 5. Icon System
 
